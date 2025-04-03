@@ -37,7 +37,7 @@
 
 ;; Public Functions
 
-;; Add new product
+;; new product
 (define-public (add-product (product-id uint) (name (string-ascii 50)))
     (let
         ((supplier tx-sender))
@@ -117,7 +117,7 @@
     )
 )
 
-;; Add to Data Maps
+;; to Data Maps
 (define-map certifications
     { product-id: uint }
     {
@@ -128,7 +128,7 @@
     }
 )
 
-;; Add Public Function
+;; Public Function
 (define-public (add-certification (product-id uint) (cert-type (string-ascii 20)) (expiry uint))
     (let
         ((supplier tx-sender))
@@ -146,7 +146,7 @@
 )
 
 
-;; Add to Data Maps
+;; to Data Maps
 (define-map location-history
     { product-id: uint, timestamp: uint }
     {
@@ -155,7 +155,7 @@
     }
 )
 
-;; Add Public Function
+;; Public Function
 (define-public (update-location (product-id uint) (location (string-ascii 50)))
     (let
         ((handler tx-sender))
@@ -172,7 +172,7 @@
 
 
 
-;; Add to Data Maps
+;; to Data Maps
 (define-map batches
     { batch-id: uint }
     {
@@ -183,7 +183,7 @@
     }
 )
 
-;; Add Public Function
+;; Public Function
 (define-public (create-batch (batch-id uint) (product-id uint) (quantity uint) (expiry-date uint))
     (let
         ((supplier tx-sender))
@@ -202,7 +202,7 @@
 
 
 
-;; Add to Data Maps
+;; to Data Maps
 (define-map price-history
     { product-id: uint, timestamp: uint }
     {
@@ -211,7 +211,7 @@
     }
 )
 
-;; Add Public Function
+;; Public Function
 (define-public (update-price (product-id uint) (new-price uint) (currency (string-ascii 10)))
     (let
         ((supplier tx-sender))
@@ -228,7 +228,7 @@
 
 
 
-;; Add to Data Maps
+;; to Data Maps
 (define-map transfers
     { transfer-id: uint }
     {
@@ -240,7 +240,7 @@
     }
 )
 
-;; Add Public Function
+;; Public Function
 (define-public (transfer-product (transfer-id uint) (product-id uint) (to principal) (quantity uint))
     (let
         ((sender tx-sender))
@@ -260,7 +260,7 @@
 
 
 
-;; Add to Data Maps
+;; to Data Maps
 (define-map warranties
     { product-id: uint }
     {
@@ -271,7 +271,7 @@
     }
 )
 
-;; Add Public Function
+;; Public Function
 (define-public (add-warranty (product-id uint) (duration uint) (terms (string-ascii 100)))
     (let
         ((supplier tx-sender))
@@ -287,3 +287,245 @@
         ))
     )
 )
+
+
+;; to Constants
+(define-constant err-invalid-rating (err u103))
+
+;; to Data Maps
+(define-map quality-reports
+    { product-id: uint, report-id: uint }
+    {
+        inspector: principal,
+        rating: uint,
+        notes: (string-ascii 200),
+        timestamp: uint
+    }
+)
+
+;; Public Function
+(define-public (submit-quality-report 
+    (product-id uint) 
+    (report-id uint)
+    (rating uint)
+    (notes (string-ascii 200)))
+    (let
+        ((inspector tx-sender))
+        (asserts! (is-supplier inspector) err-not-authorized)
+        (asserts! (<= rating u10) err-invalid-rating)
+        (ok (map-set quality-reports
+            { product-id: product-id, report-id: report-id }
+            {
+                inspector: inspector,
+                rating: rating,
+                notes: notes,
+                timestamp: stacks-block-height
+            }
+        ))
+    )
+)
+
+
+(define-map recalls
+    { recall-id: uint }
+    {
+        product-id: uint,
+        reason: (string-ascii 200),
+        severity: uint,
+        recall-date: uint,
+        resolved: bool
+    }
+)
+
+;; Public Function
+(define-public (initiate-recall 
+    (recall-id uint)
+    (product-id uint)
+    (reason (string-ascii 200))
+    (severity uint))
+    (let
+        ((supplier tx-sender))
+        (asserts! (is-product-supplier product-id supplier) err-not-authorized)
+        (ok (map-set recalls
+            { recall-id: recall-id }
+            {
+                product-id: product-id,
+                reason: reason,
+                severity: severity,
+                recall-date: stacks-block-height,
+                resolved: false
+            }
+        ))
+    )
+)
+
+
+;; to Data Maps
+(define-map maintenance-schedule
+    { product-id: uint, schedule-id: uint }
+    {
+        description: (string-ascii 100),
+        interval: uint,
+        last-maintenance: uint,
+        next-due: uint
+    }
+)
+
+;; Public Function
+(define-public (set-maintenance-schedule 
+    (product-id uint)
+    (schedule-id uint)
+    (description (string-ascii 100))
+    (interval uint))
+    (let
+        ((supplier tx-sender))
+        (asserts! (is-product-supplier product-id supplier) err-not-authorized)
+        (ok (map-set maintenance-schedule
+            { product-id: product-id, schedule-id: schedule-id }
+            {
+                description: description,
+                interval: interval,
+                last-maintenance: stacks-block-height,
+                next-due: (+ stacks-block-height interval)
+            }
+        ))
+    )
+)
+
+
+;; to Data Maps
+(define-map customer-feedback
+    { product-id: uint, feedback-id: uint }
+    {
+        customer: principal,
+        rating: uint,
+        comment: (string-ascii 200),
+        timestamp: uint
+    }
+)
+
+;; Public Function
+(define-public (submit-feedback
+    (product-id uint)
+    (feedback-id uint)
+    (rating uint)
+    (comment (string-ascii 200)))
+    (ok (map-set customer-feedback
+        { product-id: product-id, feedback-id: feedback-id }
+        {
+            customer: tx-sender,
+            rating: rating,
+            comment: comment,
+            timestamp: stacks-block-height
+        }
+    ))
+)
+
+;; to Data Maps
+(define-map product-documents
+    { product-id: uint, doc-id: uint }
+    {
+        doc-type: (string-ascii 50),
+        doc-hash: (string-ascii 64),
+        version: uint,
+        upload-date: uint
+    }
+)
+
+;; Public Function
+(define-public (add-product-document
+    (product-id uint)
+    (doc-id uint)
+    (doc-type (string-ascii 50))
+    (doc-hash (string-ascii 64))
+    (version uint))
+    (let
+        ((supplier tx-sender))
+        (asserts! (is-product-supplier product-id supplier) err-not-authorized)
+        (ok (map-set product-documents
+            { product-id: product-id, doc-id: doc-id }
+            {
+                doc-type: doc-type,
+                doc-hash: doc-hash,
+                version: version,
+                upload-date: stacks-block-height
+            }
+        ))
+    )
+)
+
+;; to Data Maps
+(define-map environmental-metrics
+    { product-id: uint, metric-id: uint }
+    {
+        carbon-footprint: uint,
+        energy-usage: uint,
+        waste-generated: uint,
+        report-date: uint
+    }
+)
+
+;; Public Function
+(define-public (record-environmental-metrics
+    (product-id uint)
+    (metric-id uint)
+    (carbon-footprint uint)
+    (energy-usage uint)
+    (waste-generated uint))
+    (let
+        ((supplier tx-sender))
+        (asserts! (is-product-supplier product-id supplier) err-not-authorized)
+        (ok (map-set environmental-metrics
+            { product-id: product-id, metric-id: metric-id }
+            {
+                carbon-footprint: carbon-footprint,
+                energy-usage: energy-usage,
+                waste-generated: waste-generated,
+                report-date: stacks-block-height
+            }
+        ))
+    )
+)
+
+;; to Data Maps
+(define-map supplier-ratings
+    { supplier-id: principal }
+    {
+        reliability-score: uint,
+        quality-score: uint,
+        delivery-score: uint,
+        last-updated: uint,
+        total-ratings: uint
+    }
+)
+
+;; Public Function
+(define-public (update-supplier-rating
+    (supplier principal)
+    (reliability uint)
+    (quality uint)
+    (delivery uint))
+    (let
+        ((existing-rating (default-to 
+            {
+                reliability-score: u0,
+                quality-score: u0,
+                delivery-score: u0,
+                last-updated: u0,
+                total-ratings: u0
+            }
+            (map-get? supplier-ratings { supplier-id: supplier }))))
+        (asserts! (is-supplier tx-sender) err-not-authorized)
+        (ok (map-set supplier-ratings
+            { supplier-id: supplier }
+            {
+                reliability-score: (+ (get reliability-score existing-rating) reliability),
+                quality-score: (+ (get quality-score existing-rating) quality),
+                delivery-score: (+ (get delivery-score existing-rating) delivery),
+                last-updated: stacks-block-height,
+                total-ratings: (+ (get total-ratings existing-rating) u1)
+            }
+        ))
+    )
+)
+
