@@ -529,3 +529,101 @@
     )
 )
 
+
+
+
+(define-map compliance-records
+    { product-id: uint, compliance-id: uint }
+    {
+        regulation-code: (string-ascii 20),
+        status: (string-ascii 10),
+        verifier: principal,
+        verification-date: uint,
+        expiry-date: uint,
+        jurisdiction: (string-ascii 20)
+    }
+)
+
+(define-constant err-invalid-dates (err u104))
+
+(define-public (add-compliance-record
+    (product-id uint)
+    (compliance-id uint)
+    (regulation-code (string-ascii 20))
+    (expiry-date uint)
+    (jurisdiction (string-ascii 20)))
+    (let
+        ((verifier tx-sender))
+        (asserts! (is-supplier verifier) err-not-authorized)
+        (asserts! (> expiry-date stacks-block-height) err-invalid-dates)
+        (ok (map-set compliance-records
+            { product-id: product-id, compliance-id: compliance-id }
+            {
+                regulation-code: regulation-code,
+                status: "active",
+                verifier: verifier,
+                verification-date: stacks-block-height,
+                expiry-date: expiry-date,
+                jurisdiction: jurisdiction
+            }
+        ))
+    )
+)
+
+(define-read-only (get-compliance-status (product-id uint) (compliance-id uint))
+    (map-get? compliance-records { product-id: product-id, compliance-id: compliance-id })
+)
+
+
+(define-map milestones
+    { product-id: uint, milestone-id: uint }
+    {
+        name: (string-ascii 50),
+        description: (string-ascii 100),
+        target-date: uint,
+        completion-date: uint,
+        status: (string-ascii 20),
+        responsible-party: principal
+    }
+)
+
+(define-public (create-milestone
+    (product-id uint)
+    (milestone-id uint)
+    (name (string-ascii 50))
+    (description (string-ascii 100))
+    (target-date uint))
+    (let
+        ((supplier tx-sender))
+        (asserts! (is-product-supplier product-id supplier) err-not-authorized)
+        (ok (map-set milestones
+            { product-id: product-id, milestone-id: milestone-id }
+            {
+                name: name,
+                description: description,
+                target-date: target-date,
+                completion-date: u0,
+                status: "pending",
+                responsible-party: supplier
+            }
+        ))
+    )
+)
+
+(define-public (complete-milestone
+    (product-id uint)
+    (milestone-id uint))
+    (let
+        ((supplier tx-sender))
+        (asserts! (is-product-supplier product-id supplier) err-not-authorized)
+        (ok (map-set milestones
+            { product-id: product-id, milestone-id: milestone-id }
+            (merge (unwrap-panic (map-get? milestones { product-id: product-id, milestone-id: milestone-id }))
+                {
+                    completion-date: stacks-block-height,
+                    status: "completed"
+                }
+            )
+        ))
+    )
+)
