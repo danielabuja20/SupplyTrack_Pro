@@ -20,6 +20,16 @@ path = 'contracts/SupplyTrackAnalytics.clar'
 clarity_version = 3
 epoch = 3.1
 
+[contracts.SupplyTrackRisk]
+path = 'contracts/SupplyTrackRisk.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SupplyTrackCompliance]
+path = 'contracts/SupplyTrackCompliance.clar'
+clarity_version = 3
+epoch = 3.1
+
 [repl.analysis]
 passes = ['check_checker']
 
