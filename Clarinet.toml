@@ -1,0 +1,45 @@
+[project]
+name = 'SupplyTrack'
+description = ''
+authors = []
+telemetry = true
+cache_dir = '.\.cache'
+requirements = []
+[contracts.SupplyTrack]
+path = 'contracts/SupplyTrack.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SupplyTrackAlerts]
+path = 'contracts/SupplyTrackAlerts.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SupplyTrackAnalytics]
+path = 'contracts/SupplyTrackAnalytics.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SupplyTrackRisk]
+path = 'contracts/SupplyTrackRisk.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SupplyTrackCompliance]
+path = 'contracts/SupplyTrackCompliance.clar'
+clarity_version = 3
+epoch = 3.1
+
+[contracts.SupplierAuthorizationExpiry]
+path = 'contracts/supplier-authorization-expiry.clar'
+clarity_version = 3
+epoch = 3.1
+
+[repl.analysis]
+passes = ['check_checker']
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false
